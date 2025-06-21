@@ -1,0 +1,30 @@
+{
+  "name": "memory-hexagonal",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "vue-timer-hook": "^1.0.84",
+    "vuetify": "^3.8.6"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.0.0-beta.3",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.30",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vitest/ui": "^3.2.3",
+    "@vue/tsconfig": "^0.7.0",
+    "jest": "^29.7.0",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.3",
+    "vue-tsc": "^2.2.8"
+  }
+}
