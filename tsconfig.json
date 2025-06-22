@@ -6,6 +6,9 @@
   ],
   "include": ["src/**/*.ts"],
   "compilerOptions": {
-    "types": ["vitest", "node"]
+    "types": [ "vitest", "node" ],
+    "target": "ES2019", // ou même ES5 si nécessaire
+    "lib": [ "ES2019" ],
+    "downlevelIteration": true
   }
 }

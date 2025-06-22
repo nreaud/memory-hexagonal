@@ -101,10 +101,26 @@ describe('Test getDifferentsObjectivesNumbers', () => {
             .filter((key: number, wrongCombinaison: Leaf[][]) => wrongCombinaison.length > 0).length)
         .toEqual(0);
     })
+    it('Chaque clef est différente', () => {
+        expect(objectivesNumbers.keys().reduce((acc, value) => {
+            if (!acc.includes(value)) {
+                acc.push(value);
+            }
+            return acc;
+        }, [].toArray().length).toEqual(objectivesNumbers.keys().toArray().length);
+    })
 });
 
 describe('Test electObjectiveNumber', () => {
     const numbers = buildGrid(19);
-    it('')
+    const allCombinaisons = getAllCombinaisons(leafs);
+    const objectivesNumbers = getDifferentsObjectivesNumbers(allCombinaisons, leafs, numbers);
+    const objectiveNumber = electObjectiveNumber(objectivesNumbers);
+    it('Valeur entre 0 et 27', () => { // Max de la somme de 3 chiffres
+        expect(objectiveNumber >= 0 && objectiveNumber <= 27).toEqual(true);
+    })
+    it('La valeur fait partie de objectivesNumbers', () => {
+        expect(objectivesNumbers.keys().filter(key => key === objectiveNumber)).toArray().length).toEqual(1);
+    })
 });
 
