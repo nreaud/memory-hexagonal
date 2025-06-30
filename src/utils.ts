@@ -19,15 +19,8 @@ export const getAllCombinaisons = (leafs: Leaf[]): Leaf[][] => {
 }
 
 export const electObjectiveNumber = (diffentObjectiveNumbers: Map<number, Leaf[][]>): number => {
-  let indexObjectiveNumber = Math.floor(Math.random()*diffentObjectiveNumbers.size);
-  let res = -1;
-  for(let index of diffentObjectiveNumbers.keys()){
-    if(index === indexObjectiveNumber){
-      res = index;
-      break;
-    }
-  }
-  return res;
+  let indexObjectiveNumber = Math.floor(Math.random()*(diffentObjectiveNumbers.size+1));
+  return diffentObjectiveNumbers.keys().toArray()[indexObjectiveNumber];
 
 }
 
@@ -87,7 +80,7 @@ export const getDifferentsObjectivesNumbers = (combinaisons:Leaf[][], leafs: Lea
 export const buildGrid = (length: number) => {
   let res = [];
   for(let i=0; i<length; i++){
-    res[i] = Math.floor(Math.random()*9);
+    res[i] = Math.floor(Math.random()*10); // entre 0 et 9
   }
   return res;
 }

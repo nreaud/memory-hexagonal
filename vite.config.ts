@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [vue()],
   test: {
     globals: true,          // <- active describe, it, expect sans import
-    environment: 'node'    // ou 'jsdom' si tu fais des tests DOM
+    environment: 'jsdom'    // ou 'jsdom' si tu fais des tests DOM
   }
 })

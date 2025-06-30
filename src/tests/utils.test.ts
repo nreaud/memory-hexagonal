@@ -86,20 +86,22 @@ describe('Test getDifferentsObjectivesNumbers', () => {
     it('Chaque combinaison fait partie de la liste des combinaisons possible', () => {
         expect(objectivesNumbers.values().toArray().flat().filter((combinaison: Leaf[]) => !allCombinaisons.includes(combinaison)).length).toEqual(0);
     })
-    it('Pour chaque valeur clef la somme de chaque combinaison est égale à la valeur de la clef', () => {
+    it('Pour chaque valeur clef, la somme de chaque combinaison est égale à la valeur de la clef', () => {
         expect(objectivesNumbers.entries().toArray()
-            .map((key: number, combinaisons: Leaf[][]) =>{ 
+            .map((item) => {
+                // item[0] == key, item[1] == combinaisons
                 // On transforme les combinaisons pour ne garder que celles dont la somme de chaque combinaison est différente de la valeur de la clef
-                //FIXME pq combinaisons.filter is not a function???
-                return {key, 'wrongCombinaisons' : combinaisons.filter((combinaison: Leaf[]) => 
-                    combinaison.map((leaf) => {
-                        const index = leafs.indexOf(leaf);
-                        return numbers[index];
-                    }).reduce((acc: number, value: number)=> acc+value, 0) != key
-                )}
-            })
-            .filter((key: number, wrongCombinaison: Leaf[][]) => wrongCombinaison.length > 0).length)
-        .toEqual(0);
+                const wrongCombinaisons = item[1].filter((combinaison: Leaf[]) =>
+                    {
+                        return combinaison.map((leaf) => {
+                            const index = leafs.indexOf(leaf);
+                            return numbers[index];
+                        }).reduce((acc: number, value: number)=> acc+value, 0) != item[0]
+                    }
+                );
+                return {'key': item[0], wrongCombinaisons }
+            }).filter((item) => item.wrongCombinaisons.length > 0).length)
+            .toEqual(0);
     })
     it('Chaque clef est différente', () => {
         expect(objectivesNumbers.keys().reduce((acc, value) => {
@@ -107,7 +109,7 @@ describe('Test getDifferentsObjectivesNumbers', () => {
                 acc.push(value);
             }
             return acc;
-        }, [].toArray().length).toEqual(objectivesNumbers.keys().toArray().length);
+        }, []).length).toEqual(objectivesNumbers.keys().toArray().length);
     })
 });
 
@@ -117,10 +119,10 @@ describe('Test electObjectiveNumber', () => {
     const objectivesNumbers = getDifferentsObjectivesNumbers(allCombinaisons, leafs, numbers);
     const objectiveNumber = electObjectiveNumber(objectivesNumbers);
     it('Valeur entre 0 et 27', () => { // Max de la somme de 3 chiffres
-        expect(objectiveNumber >= 0 && objectiveNumber <= 27).toEqual(true);
+        expect(objectiveNumber >= 0 && objectiveNumber <= 27, "Objective Number: "+objectiveNumber).toEqual(true);
     })
     it('La valeur fait partie de objectivesNumbers', () => {
-        expect(objectivesNumbers.keys().filter(key => key === objectiveNumber)).toArray().length).toEqual(1);
+        expect(objectivesNumbers.keys().filter(key => key === objectiveNumber).toArray().length).toEqual(1);
     })
 });
 

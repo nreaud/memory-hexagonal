@@ -10,6 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "jsdom": "^26.1.0",
     "vue": "^3.5.13",
     "vue-timer-hook": "^1.0.84",
     "vuetify": "^3.8.6"

@@ -28,44 +28,52 @@ const hideRef = ref(false);
 const launchedRef = ref(false);
 const doneRef = ref(false);
 const valuesRef = ref(numbers.map((number)=> number+''));
-const guessTrioRef = ref("");
-const player1Ref = ref("player1");
-const player2Ref = ref("player2");
-const player1Points = ref(0);
-const player2Points = ref(0);
-const testingPlayerRef = ref("");
 const roundCountRef = ref(1);
 const objectiveNumberRef = ref(-1);
-let playersRef = ref([]);
+let playersRef = ref(['a', 'b', 'c']);
+const activePlayerRef = ref("");
+const playersPointsRef = ref([]);
+const guessTrioRef = ref("");
 
 
 const launchRound = () => {
-    time = new Date();
-    time.setSeconds(time.getSeconds() + MINUTES_MANCHE*60);
-    launchedRef.value = true;
-    timer.restart(time.getTime(), true);
-    numbers = buildGrid(numbers.length);
-    let differentObjectivesNumbers = getDifferentsObjectivesNumbers(allCombinaisons, leafs, numbers);
-    objectiveNumberRef.value = electObjectiveNumber(differentObjectivesNumbers);
-    let availablesCombinaisonsOpt = differentObjectivesNumbers.get(objectiveNumberRef.value);
-    if(!availablesCombinaisonsOpt){ // case undefined
-      throw "impossible";
-    }else{
-      availablesCombinaisons = availablesCombinaisonsOpt;
-    }
+  //TODO vérifer que les noms des joueurs sont différents
+  // initier les points à 0 pour chaque joueur
+  time = new Date();
+  time.setSeconds(time.getSeconds() + MINUTES_MANCHE*60);
+  launchedRef.value = true;
+  timer.restart(time.getTime(), true);
+  numbers = buildGrid(numbers.length);
+  let differentObjectivesNumbers = getDifferentsObjectivesNumbers(allCombinaisons, leafs, numbers);
+  objectiveNumberRef.value = electObjectiveNumber(differentObjectivesNumbers);
+  let availablesCombinaisonsOpt = differentObjectivesNumbers.get(objectiveNumberRef.value);
+  if(!availablesCombinaisonsOpt){ // case undefined
+    throw "impossible";
+  }else{
+    availablesCombinaisons = availablesCombinaisonsOpt;
+  }
 }
 
-const submit = (event) => {
-  if(event){
-      event.preventDefault()
+const isValidTrio = (trio): boolean => {
+  let indexCombinaison = availablesCombinaisons.indexOf(trio);
+  let res = false;
+  if(indexCombinaison !== -1){
+    res = true;
+    availablesCombinaisons.splice(indexCombinaison, 1); //Supprime l'élément à la position
   }
-  console.log("Combinaison testée: "+guessTrioRef.value);
-  if(testTrio(guessTrioRef.value)){
-      if(testingPlayerRef.value === player1Ref.value){
-        player1Points.value++;
-      }else{
-        player2Points.value++;
-      }
+  return res;
+}
+
+const activePlayer = (player) => {
+  console.log("Active player:"+player);
+  activePlayerRef.value=player;
+}
+
+const testCombinaison = (combinaison) => {
+  console.log("Combinaison testée: "+combinaison);
+  if(isValidTrio(combinaison)){
+      const indexPlayer = playersRef.value.indexOf(activePlayer);
+      playersPointsRef.value[indexPlayer]++;
       if(availablesCombinaisons.length === 0){
         roundCountRef.value++;
         if(roundCountRef.value <= ROUNDS){
@@ -79,14 +87,9 @@ const submit = (event) => {
   guessTrioRef.value="";
 }
 
-const testTrio = (trio): boolean => {
-  let indexCombinaison = availablesCombinaisons.indexOf(trio);
-  let res = false;
-  if(indexCombinaison !== -1){
-    res = true;
-    availablesCombinaisons.splice(indexCombinaison, 1); //Supprime l'élément à la position
-  }
-  return res;
+const clickOnHexagon = (indexHexagon) => {
+  //TODO 1er clique, 2nd et dernier: testCombinaison()
+  
 }
 
 timer = useTimer(time, false);
@@ -108,14 +111,16 @@ allCombinaisons = getAllCombinaisons(leafs);
     <div v-if="!launchedRef">
         <h2>Veuillez sélectionner le nombre de joueurs</h2>
         <form @submit.prevent="launchRound()">
+            <input type="number" v-model="playersRef.length">
             <input v-for="(player,i) in playersRef" v-model="playersRef[i]" type="text">
+            <input type="submit" value="Prêt">
         </form>
     </div>
     <div v-if="launchedRef && !doneRef">
       <div>
           <span>{{timer.minutes}} : </span><span>{{timer.seconds}}</span>
       </div>
-      <button v-for="(player,i) in playersRef">{{playersRef[i]}}</button>
+      <button v-for="(player,i) in playersRef" @click="activePlayer(player)">{{player}}</button>
       <v-container align-center justify-center row fill-height>
         <v-row class="three-hex-row-top">
           <div class="spaceHexagon">
@@ -223,9 +228,6 @@ allCombinaisons = getAllCombinaisons(leafs);
           </div>
         </v-row>
       </v-container>
-      <form @submit.prevent="handleSubmit">
-          <input v-model="guessTrioRef" @keyup.enter="submit($event)" class="mot-trouve"/>
-      </form>
     </div>
   </div>
 </template>
