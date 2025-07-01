@@ -30,15 +30,6 @@ describe('Test initRawLeafs + initLeafsRelations', () => {
 
 describe('Test de getAllCombinaisons', () => {
     const allCombinaisons = getAllCombinaisons(leafs);
-    it('Doit avoir pour chaque somme(chaque branche somme(voisin * (voisinsDuVoisins-1)) combinaisons', () => {
-        let expectedCount = 0;
-        for(const leaf of leafs){
-            for(const neighbor of leaf.neighbors){
-                expectedCount += neighbor.neighbors.length -1;
-            }
-        }
-        expect(allCombinaisons.length, 'Somme attendue: '+expectedCount).toEqual(expectedCount);
-    })
     it('Aucune combinaison ne doit avoir deux fous la même feuille', () => {
         allCombinaisons.forEach((combinaison) => {
             const singletons = combinaison.reduce((acc: Leaf[], value: Leaf)=> {
@@ -55,6 +46,20 @@ describe('Test de getAllCombinaisons', () => {
         allCombinaisons.forEach((combinaison) => {
             expect(combinaison.length).toEqual(3);
         })
+    })
+    it("Aucune combinaison ne doit être une permutation d'une autre", () => {
+        expect(allCombinaisons.filter((combinaison) => {
+            return allCombinaisons.some((combinaison2) => {
+                return ( // combinaison != combinaison2
+                    combinaison[0] != combinaison2[0] ||
+                    combinaison[1] != combinaison2[1] ||
+                    combinaison[2] != combinaison2[2]
+                ) && //Permutation
+                combinaison2.includes(combinaison[0]) && 
+                combinaison2.includes(combinaison[1]) && 
+                combinaison2.includes(combinaison[2]);
+            })
+        }).length).toEqual(0);
     })
 })
 

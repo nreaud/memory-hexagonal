@@ -14,8 +14,15 @@ export const getAllCombinaisons = (leafs: Leaf[]): Leaf[][] => {
       for(let neighbor2 of neighbor1.neighbors){
         let currentCombinaisons: Leaf[] = [leaf, neighbor1]; // By nature diffents leafs
         if(!currentCombinaisons.includes(neighbor2)){ // In cas of going backward
-          currentCombinaisons.push(neighbor2);
-          combinaisons.push(currentCombinaisons);
+            currentCombinaisons.push(neighbor2);
+          if(!combinaisons.some((combinaison) => { // check for permutations
+              return  currentCombinaisons.includes(combinaison[0]) && 
+                currentCombinaisons.includes(combinaison[1]) && 
+                currentCombinaisons.includes(combinaison[2]);
+            })
+          ){
+            combinaisons.push(currentCombinaisons);
+          }
         }
       }
     }
@@ -70,10 +77,10 @@ export const getDifferentsObjectivesNumbers = (combinaisons:Leaf[][], leafs: Lea
       .reduce((acc, value) => acc + value, 0);
     if(objectivesNumbers.has(newNumber)){
       const numberCombinaisons: Leaf[][]|undefined = objectivesNumbers.get(newNumber);
-      if(!numberCombinaisons){
-        objectivesNumbers.set(newNumber, [combinaison]);
+      if(!numberCombinaisons){ // force to do this cause can be undefined
+        objectivesNumbers.set(newNumber, [combinaison]); // should not happen cause we checked if has key before (but here to please ts)
       }else{
-        numberCombinaisons.push(combinaison); // should not happen cause we checked if has key before (but here to please ts)
+        numberCombinaisons.push(combinaison); //
       }
     }else{
       objectivesNumbers.set(newNumber, [combinaison]);

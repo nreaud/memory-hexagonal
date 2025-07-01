@@ -33,7 +33,7 @@ const valuesRef = ref(numbers.map((number)=> number+''));
 const roundCountRef = ref(1);
 const objectiveNumberRef = ref(-1);
 let playersRef = ref(['a', 'b', 'c']);
-const activePlayerRef = ref("");
+const indexActivePlayerRef = ref(-1);
 const playersPointsRef = ref([]);
 const guessTrioRef = ref([]);
 const guessIndexesRef = ref([]); // for dynamic class
@@ -64,7 +64,16 @@ const launchRound = () => {
 }
 
 const isValidTrio = (trio: Leaf[]): boolean => {
-  let indexCombinaison = availablesCombinaisons.indexOf(trio);
+  let indexCombinaison = availablesCombinaisons.findIndex((combinaison) => {
+    let identical = true;
+    for(let i=0; i<combinaison.length; i++){
+      if(combinaison[i] != trio[i]){
+        identical = false;
+        break;
+      }
+    }
+    return identical;
+  });
   let res = false;
   if(indexCombinaison !== -1){
     res = true;
@@ -73,27 +82,25 @@ const isValidTrio = (trio: Leaf[]): boolean => {
   return res;
 }
 
-const activePlayer = (player) => {
-  console.log("Active player:"+player);
-  activePlayerRef.value=player;
+const activatePlayer = (index) => {
+  console.log("Active player:"+index);
+  indexActivePlayerRef.value=index;
 }
 
 const testCombinaison = async (combinaison: Leaf[]) => {
   console.log("Combinaison testée: "+combinaison);
   if(isValidTrio(combinaison)){
-      const indexPlayer = playersRef.value.indexOf(activePlayer);
-      playersPointsRef.value[indexPlayer]++;
+      playersPointsRef.value[indexActivePlayerRef.value]++;
       validCombinaisonRef.value = true;
-      waitForNextClick=true;
   }else{
       wrongCombinaisonRef.value = true;
-      waitForNextClick = true;
   }
+  waitForNextClick=true;
 }
 
 const clickOnHexagon = async (indexHexagon) => {
   //1er clique, 2nd et dernier: testCombinaison()
-  if(!waitForNextClick){
+  if(indexActivePlayerRef.value != -1 && !waitForNextClick){
     const newLeaf = leafs[indexHexagon];
     if(guessTrioRef.value.length > 0){
       if(guessTrioRef.value.includes(newLeaf)){
@@ -113,15 +120,30 @@ const clickOnHexagon = async (indexHexagon) => {
     if(wrongCombinaisonRef.value){
       waitForNextClick = true;
     }else{
-      if(guessTrioRef.length === 3){
-        testCombinaison(guessTrioRef.value);
+      if(guessTrioRef.value.length === 3){
+        testCombinaison(guessTrioRef._rawValue); // otherwise pass a Proxy
       }
     }
   }
 }
 
-//TODO dynamic class with function to not have severals at the same time
-//TODO why sometimes 4 clickables?
+const getDynamicTextClass = (indexHexagon) => {
+  let res = 'text-black';
+  if(guessIndexesRef.value.includes(indexHexagon)){
+    if(wrongCombinaisonRef.value == true){
+      res = 'text-red';
+    }else if(validCombinaisonRef.value == true){
+      res = 'text-green';
+    }else{
+      res = 'text-blue';
+    }
+  }else{
+    if(hideRef.value == true){
+      res = 'text-white';
+    }
+  }
+  return res;
+}
 
 watch(wrongCombinaisonRef, async(newValue, oldValue) => {
   if(newValue === true){
@@ -129,6 +151,7 @@ watch(wrongCombinaisonRef, async(newValue, oldValue) => {
     wrongCombinaisonRef.value = false;
     guessTrioRef.value=[];
     guessIndexesRef.value=[];
+    indexActivePlayerRef.value=-1;
     waitForNextClick = false;
   }
 })
@@ -139,6 +162,7 @@ watch(validCombinaisonRef, async(newValue, oldValue) => {
     validCombinaisonRef.value = false;
     guessTrioRef.value=[];
     guessIndexesRef.value=[];
+    indexActivePlayerRef.value=-1;
     waitForNextClick = false;
     if(availablesCombinaisons.length === 0){ // mis à jour par isValidTrio()
       roundCountRef.value++;
@@ -177,168 +201,111 @@ allCombinaisons = getAllCombinaisons(leafs);
       <div>
           <span>{{timer.minutes}} : </span><span>{{timer.seconds}}</span>
       </div>
-      <button v-for="player in playersRef" @click="activePlayer(player)">{{player}}</button>
+      <button v-for="(player, i) in playersRef" @click="activatePlayer(i)">{{player}}</button>
       <div v-for="playerPoint in playersPointsRef">{{playerPoint}}</div>
       <v-container align-center justify-center row fill-height>
         <v-row class="three-hex-row-top">
           <div class="spaceHexagon" @click="clickOnHexagon(0)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(0), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(0), 
-            'text-blue': guessIndexesRef.includes(0)}">{{valuesRef[0]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(0)">{{valuesRef[0]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(1)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(1), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(1), 
-            'text-blue': guessIndexesRef.includes(1)}">{{valuesRef[1]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(1)">{{valuesRef[1]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(2)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(2), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(2), 
-            'text-blue': guessIndexesRef.includes(2)}">{{valuesRef[2]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(2)">{{valuesRef[2]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
         </v-row>
         <v-row class="four-hex-row-top">
           <div class="spaceHexagon" @click="clickOnHexagon(3)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(3), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(3), 
-            'text-blue': guessIndexesRef.includes(3)}">{{valuesRef[3]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(3)">{{valuesRef[3]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(4)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(4), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(4), 
-            'text-blue': guessIndexesRef.includes(4)}">{{valuesRef[4]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(4)">{{valuesRef[4]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(5)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(5), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(5), 
-            'text-blue': guessIndexesRef.includes(5)}">{{valuesRef[5]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(5)">{{valuesRef[5]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(6)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(6), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(6), 
-            'text-blue': guessIndexesRef.includes(6)}">{{valuesRef[6]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(6)">{{valuesRef[6]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
         </v-row>
         <v-row class="five-hex-row">
           <div class="spaceHexagon" @click="clickOnHexagon(7)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(7), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(7), 
-            'text-blue': guessIndexesRef.includes(7)}">{{valuesRef[7]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(7)">{{valuesRef[7]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(8)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(8), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(8), 
-            'text-blue': guessIndexesRef.includes(8)}">{{valuesRef[8]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(8)">{{valuesRef[8]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(9)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(9), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(9), 
-            'text-blue': guessIndexesRef.includes(9)}">{{valuesRef[9]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(9)">{{valuesRef[9]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(10)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(10), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(10), 
-            'text-blue': guessIndexesRef.includes(10)}">{{valuesRef[10]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(10)">{{valuesRef[10]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(11)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(11), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(11), 
-            'text-blue': guessIndexesRef.includes(11)}">{{valuesRef[11]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(11)">{{valuesRef[11]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
         </v-row>
         <v-row class="four-hex-row-bottom">
           <div class="spaceHexagon" @click="clickOnHexagon(12)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(12), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(12), 
-            'text-blue': guessIndexesRef.includes(12)}">{{valuesRef[12]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(12)">{{valuesRef[12]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(13)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(13), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(13), 
-            'text-blue': guessIndexesRef.includes(13)}">{{valuesRef[13]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(13)">{{valuesRef[13]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(14)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(14), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(14), 
-            'text-blue': guessIndexesRef.includes(14)}">{{valuesRef[14]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(14)">{{valuesRef[14]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(15)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(15), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(15), 
-            'text-blue': guessIndexesRef.includes(15)}">{{valuesRef[15]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(15)">{{valuesRef[15]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
         </v-row>
         <v-row class="three-hex-row-bottom">
           <div class="spaceHexagon" @click="clickOnHexagon(16)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(16), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(16), 
-            'text-blue': guessIndexesRef.includes(16)}">{{valuesRef[16]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(16)">{{valuesRef[16]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>
           <div class="spaceHexagon" @click="clickOnHexagon(17)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(17), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(17), 
-            'text-blue': guessIndexesRef.includes(17)}">{{valuesRef[17]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(17)">{{valuesRef[17]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div>
           </div>  
           <div class="spaceHexagon" @click="clickOnHexagon(18)">
             <div class="drawHexagonPlain" :class="{hexagonWhite: !hideRef, hexagonBlack: hideRef}"></div>
-            <strong class="text" :class="{'text-white': hideRef, 
-            'text-black': !hideRef, 'text-red': wrongCombinaisonRef && guessIndexesRef.includes(18), 
-            'text-green': validCombinaisonRef  && guessIndexesRef.includes(18), 
-            'text-blue': guessIndexesRef.includes(18)}">{{valuesRef[18]}}</strong>
+            <strong class="text" :class="getDynamicTextClass(18)">{{valuesRef[18]}}</strong>
             <div class="drawHexagonBorder" :class="{hexagonBorderWhite: hideRef, hexagonBorderBlack: !hideRef}"></div> 
           </div>
         </v-row>
