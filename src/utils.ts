@@ -1,5 +1,10 @@
 export class Leaf {
+  letter: string;
   neighbors: Leaf[];
+
+  constructor(letter: string) {
+    this.letter = letter;
+  }
 }
 
 export const getAllCombinaisons = (leafs: Leaf[]): Leaf[][] => {
@@ -24,9 +29,9 @@ export const electObjectiveNumber = (diffentObjectiveNumbers: Map<number, Leaf[]
 
 }
 
-export const initRawLeafs = (leafs: Leaf[]) => {
+export const initRawLeafs = (leafs: Leaf[], letters: string[]) => {
   for(let i = 0; i<leafs.length; i++){
-    leafs[i] = new Leaf();
+    leafs[i] = new Leaf(letters[i]);
   }
 }
 

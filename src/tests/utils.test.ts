@@ -1,7 +1,8 @@
 import { initRawLeafs, initLeafsRelations, Leaf, getAllCombinaisons, buildGrid, getDifferentsObjectivesNumbers, electObjectiveNumber } from '../utils';
 
+const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
 let leafs = new Array(19);
-initRawLeafs(leafs);
+initRawLeafs(leafs, letters);
 initLeafsRelations(leafs);
 
 describe('Test initRawLeafs + initLeafsRelations', () => {
