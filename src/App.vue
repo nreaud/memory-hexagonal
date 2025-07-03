@@ -7,7 +7,6 @@ import { getAllCombinaisons, electObjectiveNumber, initRawLeafs, initLeafsRelati
 let time;
 let timer; 
 const MINUTES_MANCHE = 0.03;
-const ROUNDS = 10;
 let numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8];
 const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'];
 const leafs = new Array(letters.length);
@@ -32,34 +31,53 @@ const doneRef = ref(false);
 const valuesRef = ref(numbers.map((number)=> number+''));
 const roundCountRef = ref(1);
 const objectiveNumberRef = ref(-1);
-let playersRef = ref(['a', 'b', 'c']);
+let playersRef = ref([undefined, undefined, undefined]);
 const indexActivePlayerRef = ref(-1);
 const playersPointsRef = ref([]);
 const guessTrioRef = ref([]);
 const guessIndexesRef = ref([]); // for dynamic class
 const wrongCombinaisonRef = ref(false);
 const validCombinaisonRef = ref(false);
+const roundDoneRef = ref(false);
+const roundsRef = ref(10);
 
 
-const launchRound = () => {
-  //TODO vérifer que les noms des joueurs sont différents
-  // initier les points à 0 pour chaque joueur
-  playersPointsRef.value = new Array(playersRef.value.length);
-  for(let i = 0; i<playersPointsRef.value.length; i++){
-    playersPointsRef.value[i] = 0;
-  }
-  time = new Date();
-  time.setSeconds(time.getSeconds() + MINUTES_MANCHE*60);
-  launchedRef.value = true;
-  timer.restart(time.getTime(), true);
-  numbers = buildGrid(numbers.length);
-  let differentObjectivesNumbers = getDifferentsObjectivesNumbers(allCombinaisons, leafs, numbers);
-  objectiveNumberRef.value = electObjectiveNumber(differentObjectivesNumbers);
-  let availablesCombinaisonsOpt = differentObjectivesNumbers.get(objectiveNumberRef.value);
-  if(!availablesCombinaisonsOpt){ // case undefined
-    throw "impossible";
-  }else{
-    availablesCombinaisons = availablesCombinaisonsOpt;
+const launchRound = (init=false) => {
+  let emptyName:boolean = playersRef.value.filter(playerName => !playerName).length > 0;
+  let uniqueNames: string[] = playersRef.value.reduce((uniqueNamesAcc, newName) => {
+    if(!uniqueNamesAcc.includes(newName)){
+      uniqueNamesAcc.push(newName);
+    }
+    return uniqueNamesAcc;
+  }, []);
+  if(!emptyName && uniqueNames.length === playersRef.value.length && playersRef.value.length > 0){
+    if(init){
+      // initier les points à 0 pour chaque joueur
+      playersPointsRef.value = new Array(playersRef.value.length);
+      for(let i = 0; i<playersPointsRef.value.length; i++){
+        playersPointsRef.value[i] = 0;
+      }
+    }
+    time = new Date();
+    time.setSeconds(time.getSeconds() + MINUTES_MANCHE*60);
+    launchedRef.value = true;
+    timer.restart(time.getTime(), true);
+
+    numbers = buildGrid(numbers.length);
+    let differentObjectivesNumbers = getDifferentsObjectivesNumbers(allCombinaisons, leafs, numbers);
+    objectiveNumberRef.value = electObjectiveNumber(differentObjectivesNumbers);
+    let availablesCombinaisonsOpt = differentObjectivesNumbers.get(objectiveNumberRef.value);
+
+    roundDoneRef.value = false;
+    if(!init){
+      roundCountRef.value++;
+    }
+
+    if(!availablesCombinaisonsOpt){ // case undefined
+      throw "impossible";
+    }else{
+      availablesCombinaisons = availablesCombinaisonsOpt;
+    }
   }
 }
 
@@ -165,10 +183,7 @@ watch(validCombinaisonRef, async(newValue, oldValue) => {
     indexActivePlayerRef.value=-1;
     waitForNextClick = false;
     if(availablesCombinaisons.length === 0){ // mis à jour par isValidTrio()
-      roundCountRef.value++;
-      if(roundCountRef.value <= ROUNDS){
-        launchRound();
-      }
+      roundDoneRef.value = true;
     }
   }
 })
@@ -191,18 +206,42 @@ allCombinaisons = getAllCombinaisons(leafs);
   <div class="background">
     <div v-if="!launchedRef">
         <h2>Veuillez sélectionner le nombre de joueurs</h2>
-        <form @submit.prevent="launchRound()">
+        <form @submit.prevent="launchRound(true)">
             <input type="number" v-model="playersRef.length">
-            <input v-for="(player,i) in playersRef" v-model="playersRef[i]" type="text">
+            <input type="number" v-model="roundsRef">
+            <div>
+              <input v-for="(player,i) in playersRef" v-model="playersRef[i]"
+              type="text" placeholder="Veuillez rentrer un nom">
+            </div>
             <input type="submit" value="Prêt">
         </form>
     </div>
     <div v-if="launchedRef && !doneRef">
-      <div>
+      <h2>
+        Manche {{roundCountRef}}
+      </h2>
+      <h2>
           <span>{{timer.minutes}} : </span><span>{{timer.seconds}}</span>
+      </h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th v-for="(player, i) in playersRef">
+                <button @click="activatePlayer(i)">{{player}}</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td v-for="playerPoint in playersPointsRef">
+                <span>{{playerPoint}}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <button v-for="(player, i) in playersRef" @click="activatePlayer(i)">{{player}}</button>
-      <div v-for="playerPoint in playersPointsRef">{{playerPoint}}</div>
+      <button v-if="roundDoneRef == true && roundCountRef < roundsRef">Nouvelle manche</button>
       <v-container align-center justify-center row fill-height>
         <v-row class="three-hex-row-top">
           <div class="spaceHexagon" @click="clickOnHexagon(0)">
@@ -315,6 +354,28 @@ allCombinaisons = getAllCombinaisons(leafs);
 </template>
 
 <style scoped>
+
+input[type=text], input[type=number]  {
+  border: 1px solid #333;
+  margin: 1em;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table{
+  margin-left: auto;
+  margin-right: auto;
+  font-size: x-large;
+}
+
+h2{
+  font-size: xx-large;
+}
+
+button {
+  font-size: x-large;
+}
 
 .v-row{
   margin-top: 0px !important;
